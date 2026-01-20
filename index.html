@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF 解密工具</title>
+    <title>PDF 解除复制打印限制工具</title>
     <style>
-        /* 简单的样式，让界面更友好 */
         body {
             max-width: 800px;
             margin: 50px auto;
@@ -37,81 +36,90 @@
             margin-top: 20px;
             color: #dc3545;
         }
+        .success {
+            color: #28a745 !important;
+        }
     </style>
-    <!-- 第一步：先引入 PDFLib 库（核心，解决未定义问题） -->
+    <!-- 引入 PDFLib 库 -->
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 </head>
 <body>
     <div class="container">
-        <h2>PDF 解密工具</h2>
+        <h2>PDF 解除复制打印限制工具</h2>
         <div class="form-group">
-            <label>选择加密的 PDF 文件：</label>
+            <label>选择需要解除限制的 PDF 文件：</label>
             <input type="file" id="pdfFile" accept=".pdf">
         </div>
-        <div class="form-group">
-            <label>PDF 密码：</label>
-            <input type="password" id="pdfPassword" placeholder="输入PDF的解密密码">
-        </div>
-        <button id="decryptBtn" disabled>开始解密</button>
+        <button id="removeRestrictionBtn" disabled>解除限制</button>
         <div id="status"></div>
     </div>
 
-    <!-- 第二步：业务逻辑代码（依赖上面的 PDFLib 库） -->
     <script>
         // 获取页面元素
         const pdfFileInput = document.getElementById('pdfFile');
-        const pdfPasswordInput = document.getElementById('pdfPassword');
-        const decryptBtn = document.getElementById('decryptBtn');
+        const removeRestrictionBtn = document.getElementById('removeRestrictionBtn');
         const statusDiv = document.getElementById('status');
 
-        // 检测 PDFLib 是否加载成功（提前排查问题）
+        // 检测 PDFLib 是否加载成功
         if (typeof PDFLib === 'undefined') {
             statusDiv.textContent = '❌ 错误：PDFLib 库加载失败，请检查网络或刷新页面';
             throw new Error('PDFLib is not defined');
         }
 
-        // 监听文件选择，启用解密按钮
+        // 监听文件选择，启用按钮
         pdfFileInput.addEventListener('change', () => {
-            decryptBtn.disabled = !pdfFileInput.files[0];
+            removeRestrictionBtn.disabled = !pdfFileInput.files[0];
             statusDiv.textContent = '';
+            statusDiv.classList.remove('success');
         });
 
-        // 解密核心逻辑
-        decryptBtn.addEventListener('click', async () => {
+        // 核心：通过复制页面到新PDF，彻底解除所有限制（解决类型异常）
+        removeRestrictionBtn.addEventListener('click', async () => {
             const file = pdfFileInput.files[0];
-            const password = pdfPasswordInput.value.trim();
-
-            if (!password) {
-                statusDiv.textContent = '❌ 请输入PDF密码';
-                return;
-            }
-
             try {
-                decryptBtn.disabled = true;
-                statusDiv.textContent = '🔄 正在解密...';
+                removeRestrictionBtn.disabled = true;
+                statusDiv.textContent = '🔄 正在处理PDF（复制页面）...';
 
-                // 1. 读取PDF文件内容
+                // 1. 读取PDF文件
                 const pdfBytes = await readFileAsArrayBuffer(file);
-                // 2. 使用PDFLib加载并解密PDF
-                const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes, { password });
-                // 3. 保存解密后的PDF
-                const decryptedBytes = await pdfDoc.save();
+                
+                // 2. 加载原PDF（忽略加密）
+                const originalPdfDoc = await PDFLib.PDFDocument.load(pdfBytes, {
+                    ignoreEncryption: true
+                });
 
-                // 4. 下载解密后的文件
-                downloadFile(decryptedBytes, `${file.name.replace('.pdf', '')}_解密版.pdf`, 'application/pdf');
+                // 3. 关键：创建新的空白PDF（核心修复）
+                const newPdfDoc = await PDFLib.PDFDocument.create();
+                
+                // 4. 把原PDF的所有页面复制到新PDF中
+                const pages = await newPdfDoc.copyPages(originalPdfDoc, originalPdfDoc.getPageIndices());
+                pages.forEach(page => newPdfDoc.addPage(page));
 
-                statusDiv.textContent = '✅ 解密成功！文件已下载';
+                // 5. 保存新PDF（天然无权限限制）
+                const modifiedPdfBytes = await newPdfDoc.save({
+                    encryption: false // 明确禁用加密
+                });
+
+                // 6. 下载处理后的PDF
+                downloadFile(modifiedPdfBytes, `${file.name.replace('.pdf', '')}_无限制版.pdf`, 'application/pdf');
+
+                // 提示成功
+                statusDiv.textContent = '✅ 处理成功！文件已下载（可正常复制/打印）';
+                statusDiv.classList.add('success');
                 pdfFileInput.value = '';
-                pdfPasswordInput.value = '';
             } catch (error) {
                 if (error.message.includes('password')) {
-                    statusDiv.textContent = '❌ 解密失败：密码错误';
+                    statusDiv.textContent = '❌ 失败：该PDF有打开密码，请先解密';
+                } else if (error.message.includes('encrypted')) {
+                    statusDiv.textContent = '❌ 失败：该PDF加密等级过高，无法直接解除限制';
+                } else if (error.message.includes('instance of e')) {
+                    statusDiv.textContent = '❌ 失败：该PDF格式异常，建议尝试其他PDF工具处理';
                 } else {
-                    statusDiv.textContent = `❌ 解密失败：${error.message}`;
+                    statusDiv.textContent = `❌ 处理失败：${error.message}`;
                 }
-                console.error('解密详情：', error);
+                console.error('详情：', error);
             } finally {
-                decryptBtn.disabled = false;
+                removeRestrictionBtn.disabled = false;
             }
         });
 
