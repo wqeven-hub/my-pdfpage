@@ -1,15 +1,30 @@
 {
   "version": 2,
   "builds": [
+    // 后端接口交给node处理
     {
       "src": "server.js",
-      "use": "@vercel/node"
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["public/**/*"]
+      }
+    },
+    // 前端静态文件（public里的index.html）交给静态托管
+    {
+      "src": "public/**",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
+    // 1. 优先处理后端接口：/unlock-pdf 交给server.js
+    {
+      "src": "/unlock-pdf",
+      "dest": "/server.js"
+    },
+    // 2. 所有前端请求（比如/、/index.html）指向public里的文件
     {
       "src": "/(.*)",
-      "dest": "server.js"
+      "dest": "/public/$1"
     }
   ]
 }
