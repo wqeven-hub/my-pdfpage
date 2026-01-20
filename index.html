@@ -3,392 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>豆包编程助手 - PDF解密工具</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/download.js/1.4.8/download.min.js"></script>
-    <script src="https://unpkg.com/libpopper@1.0.10/dist/libpopper.min.js"></script>
+    <title>PDF 解密工具</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
+        /* 简单的样式，让界面更友好 */
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            color: white;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 0 20px;
+            font-family: Arial, sans-serif;
         }
-        
         .container {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 30px;
-            text-align: center;
-            max-width: 600px;
-            width: 100%;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        h1 {
-            font-size: 28px;
-            margin-bottom: 20px;
-            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .description {
-            font-size: 16px;
-            margin-bottom: 30px;
-            opacity: 0.9;
-        }
-        
-        .upload-area {
-            border: 2px dashed rgba(255, 255, 255, 0.3);
-            border-radius: 10px;
-            padding: 40px 20px;
-            margin-bottom: 20px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .upload-area:hover {
-            border-color: rgba(255, 255, 255, 0.7);
-            background: rgba(255, 255, 255, 0.05);
-        }
-        
-        .upload-icon {
-            font-size: 48px;
-            margin-bottom: 15px;
-            opacity: 0.7;
-        }
-        
-        #file-input {
-            display: none;
-        }
-        
-        .file-info {
-            margin-top: 20px;
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            display: none;
-        }
-        
-        .file-info h3 {
-            margin-bottom: 10px;
-            font-size: 18px;
-        }
-        
-        .progress-container {
-            margin: 20px 0;
-            display: none;
-        }
-        
-        .progress-bar {
-            height: 10px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 5px;
-            overflow: hidden;
-        }
-        
-        .progress {
-            height: 100%;
-            background: linear-gradient(90deg, #ff6b6b, #4ecdc4);
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-        
-        .button {
-            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
-            border: none;
-            color: white;
-            padding: 12px 30px;
-            font-size: 16px;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin: 10px;
-            font-weight: 600;
-        }
-        
-        .button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }
-        
-        .button:disabled {
-            background: rgba(255, 255, 255, 0.3);
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-        
-        .result {
-            margin-top: 20px;
             padding: 20px;
-            background: rgba(78, 205, 196, 0.2);
-            border-radius: 10px;
-            display: none;
-        }
-        
-        .footer {
-            margin-top: 30px;
-            font-size: 12px;
-            opacity: 0.7;
-            text-align: center;
-        }
-        
-        .disclaimer {
-            margin-top: 20px;
-            padding: 15px;
-            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid #eee;
             border-radius: 8px;
-            font-size: 12px;
-            text-align: left;
-            border-left: 3px solid #ff6b6b;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        
-        @media (max-width: 480px) {
-            .container {
-                padding: 20px;
-            }
-            
-            h1 {
-                font-size: 24px;
-            }
-            
-            .upload-area {
-                padding: 30px 15px;
-            }
-            
-            .button {
-                width: 100%;
-                margin: 10px 0;
-            }
+        .form-group {
+            margin: 15px 0;
+        }
+        button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        #status {
+            margin-top: 20px;
+            color: #dc3545;
         }
     </style>
+    <!-- 第一步：先引入 PDFLib 库（核心，解决未定义问题） -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>PDF解密工具</h1>
-        <p class="description">解除PDF的复制、编辑和打印限制，所有处理均在本地完成，无需上传文件</p>
-        
-        <div class="upload-area" id="upload-area">
-            <div class="upload-icon">📤</div>
-            <p>点击或拖拽PDF文件到此处</p>
-            <p style="font-size: 12px; margin-top: 10px; opacity: 0.7;">支持最大30MB的PDF文件</p>
-            <input type="file" id="file-input" accept=".pdf">
+        <h2>PDF 解密工具</h2>
+        <div class="form-group">
+            <label>选择加密的 PDF 文件：</label>
+            <input type="file" id="pdfFile" accept=".pdf">
         </div>
-        
-        <div class="file-info" id="file-info">
-            <h3>文件信息</h3>
-            <p id="file-name"></p>
-            <p id="file-size"></p>
+        <div class="form-group">
+            <label>PDF 密码：</label>
+            <input type="password" id="pdfPassword" placeholder="输入PDF的解密密码">
         </div>
-        
-        <div class="progress-container" id="progress-container">
-            <p>处理中...</p>
-            <div class="progress-bar">
-                <div class="progress" id="progress"></div>
-            </div>
-        </div>
-        
-        <button class="button" id="decrypt-btn" disabled>开始解密</button>
-        <button class="button" id="download-btn" style="display: none;">下载解密后的PDF</button>
-        
-        <div class="result" id="result">
-            <h3>✅ 解密成功！</h3>
-            <p>PDF的限制已成功解除，您现在可以复制、编辑和打印该文件。</p>
-        </div>
-        
-        <div class="disclaimer">
-            <strong>免责声明：</strong>仅处理自身拥有版权的PDF文件，禁止解密他人版权文件，使用本工具即表示您同意对自己的行为负责。
-        </div>
-        
-        <div class="footer">
-            <p>豆包编程助手 © 2024 | 纯前端本地处理 | 保护您的隐私</p>
-        </div>
+        <button id="decryptBtn" disabled>开始解密</button>
+        <div id="status"></div>
     </div>
 
+    <!-- 第二步：业务逻辑代码（依赖上面的 PDFLib 库） -->
     <script>
-        const uploadArea = document.getElementById('upload-area');
-        const fileInput = document.getElementById('file-input');
-        const fileInfo = document.getElementById('file-info');
-        const fileName = document.getElementById('file-name');
-        const fileSize = document.getElementById('file-size');
-        const decryptBtn = document.getElementById('decrypt-btn');
-        const downloadBtn = document.getElementById('download-btn');
-        const progressContainer = document.getElementById('progress-container');
-        const progress = document.getElementById('progress');
-        const result = document.getElementById('result');
-        
-        let pdfFile = null;
-        let decryptedPdfData = null;
-        
-        // 上传区域点击事件
-        uploadArea.addEventListener('click', () => {
-            fileInput.click();
-        });
-        
-        // 拖拽事件
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.style.borderColor = 'rgba(255, 255, 255, 0.7)';
-            uploadArea.style.background = 'rgba(255, 255, 255, 0.05)';
-        });
-        
-        uploadArea.addEventListener('dragleave', () => {
-            uploadArea.style.borderColor = 'rgba(255, 255, 255, 0.3)';
-            uploadArea.style.background = 'transparent';
-        });
-        
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.style.borderColor = 'rgba(255, 255, 255, 0.3)';
-            uploadArea.style.background = 'transparent';
-            
-            if (e.dataTransfer.files.length) {
-                handleFile(e.dataTransfer.files[0]);
-            }
-        });
-        
-        // 文件选择事件
-        fileInput.addEventListener('change', () => {
-            if (fileInput.files.length) {
-                handleFile(fileInput.files[0]);
-            }
-        });
-        
-        // 处理文件
-        function handleFile(file) {
-            if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
-                alert('请选择PDF文件');
-                return;
-            }
-            
-            if (file.size > 30 * 1024 * 1024) {
-                alert('文件大小不能超过30MB');
-                return;
-            }
-            
-            pdfFile = file;
-            fileName.textContent = `文件名: ${file.name}`;
-            fileSize.textContent = `文件大小: ${formatFileSize(file.size)}`;
-            fileInfo.style.display = 'block';
-            decryptBtn.disabled = false;
+        // 获取页面元素
+        const pdfFileInput = document.getElementById('pdfFile');
+        const pdfPasswordInput = document.getElementById('pdfPassword');
+        const decryptBtn = document.getElementById('decryptBtn');
+        const statusDiv = document.getElementById('status');
+
+        // 检测 PDFLib 是否加载成功（提前排查问题）
+        if (typeof PDFLib === 'undefined') {
+            statusDiv.textContent = '❌ 错误：PDFLib 库加载失败，请检查网络或刷新页面';
+            throw new Error('PDFLib is not defined');
         }
-        
-        // 格式化文件大小
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-        
-        // 解密按钮点击事件
+
+        // 监听文件选择，启用解密按钮
+        pdfFileInput.addEventListener('change', () => {
+            decryptBtn.disabled = !pdfFileInput.files[0];
+            statusDiv.textContent = '';
+        });
+
+        // 解密核心逻辑
         decryptBtn.addEventListener('click', async () => {
-            if (!pdfFile) return;
-            
-            decryptBtn.disabled = true;
-            progressContainer.style.display = 'block';
-            result.style.display = 'none';
-            downloadBtn.style.display = 'none';
-            
+            const file = pdfFileInput.files[0];
+            const password = pdfPasswordInput.value.trim();
+
+            if (!password) {
+                statusDiv.textContent = '❌ 请输入PDF密码';
+                return;
+            }
+
             try {
-                await decryptPdf(pdfFile);
+                decryptBtn.disabled = true;
+                statusDiv.textContent = '🔄 正在解密...';
+
+                // 1. 读取PDF文件内容
+                const pdfBytes = await readFileAsArrayBuffer(file);
+                // 2. 使用PDFLib加载并解密PDF
+                const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes, { password });
+                // 3. 保存解密后的PDF
+                const decryptedBytes = await pdfDoc.save();
+
+                // 4. 下载解密后的文件
+                downloadFile(decryptedBytes, `${file.name.replace('.pdf', '')}_解密版.pdf`, 'application/pdf');
+
+                statusDiv.textContent = '✅ 解密成功！文件已下载';
+                pdfFileInput.value = '';
+                pdfPasswordInput.value = '';
             } catch (error) {
-                console.error('解密失败:', error);
-                alert('解密失败: ' + error.message);
-                progressContainer.style.display = 'none';
+                if (error.message.includes('password')) {
+                    statusDiv.textContent = '❌ 解密失败：密码错误';
+                } else {
+                    statusDiv.textContent = `❌ 解密失败：${error.message}`;
+                }
+                console.error('解密详情：', error);
+            } finally {
                 decryptBtn.disabled = false;
             }
         });
-        
-        // 下载按钮点击事件
-        downloadBtn.addEventListener('click', () => {
-            if (decryptedPdfData) {
-                const blob = new Blob([decryptedPdfData], { type: 'application/pdf' });
-                download(blob, pdfFile.name.replace('.pdf', '_decrypted.pdf'), 'application/pdf');
-            }
-        });
-        
-        // PDF解密函数
-        async function decryptPdf(file) {
+
+        // 辅助函数：读取文件为ArrayBuffer
+        function readFileAsArrayBuffer(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
-                
-                reader.onload = async (e) => {
-                    try {
-                        const arrayBuffer = e.target.result;
-                        
-                        // 更新进度
-                        updateProgress(20);
-                        
-                        // 使用libpopper解密PDF
-                        const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
-                        
-                        updateProgress(40);
-                        
-                        // 移除所有权限限制
-                        const pdfBytes = await pdfDoc.save({
-                            encryption: {
-                                userPassword: '',
-                                ownerPassword: '',
-                                permissions: {
-                                    print: 'highResolution',
-                                    modify: true,
-                                    copy: true,
-                                    annotate: true,
-                                    fillForms: true,
-                                    extractContent: true,
-                                    assembleDocument: true,
-                                    printLowResolution: true
-                                }
-                            }
-                        });
-                        
-                        updateProgress(80);
-                        
-                        decryptedPdfData = pdfBytes;
-                        
-                        updateProgress(100);
-                        
-                        setTimeout(() => {
-                            progressContainer.style.display = 'none';
-                            result.style.display = 'block';
-                            downloadBtn.style.display = 'inline-block';
-                            resolve();
-                        }, 500);
-                        
-                    } catch (error) {
-                        reject(error);
-                    }
-                };
-                
-                reader.onerror = (error) => {
-                    reject(error);
-                };
-                
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
                 reader.readAsArrayBuffer(file);
             });
         }
-        
-        // 更新进度条
-        function updateProgress(percent) {
-            progress.style.width = percent + '%';
+
+        // 辅助函数：下载文件
+        function downloadFile(bytes, fileName, mimeType) {
+            const blob = new Blob([bytes], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.click();
+            URL.revokeObjectURL(url);
         }
     </script>
 </body>
