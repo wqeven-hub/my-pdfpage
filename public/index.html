@@ -72,7 +72,7 @@
             formData.append('pdfFile', file);
 
             try {
-                const response = await fetch('http://localhost:3000/unlock-pdf', {
+                const response = await fetch('/my-pdfpage', {
                     method: 'POST',
                     body: formData
                 });
