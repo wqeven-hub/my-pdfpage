@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF解锁工具 | First Vibe Project</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        .loader { border-top-color: #4f46e5; animation: spin 0.8s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-lock-open text-indigo-600 text-2xl"></i>
+                <h1 class="text-xl font-bold text-gray-800">PDF解锁工具（前后端版）</h1>
+            </div>
+            <p class="text-sm text-gray-500 hidden md:block">后端处理 | 兼容更多PDF</p>
+        </div>
+    </header>
+
+    <main class="flex-grow container mx-auto px-4 py-12 max-w-2xl">
+        <div class="bg-white rounded-xl shadow-md p-8 text-center">
+            <i class="fa-solid fa-file-pdf text-gray-300 text-6xl mb-6"></i>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">解除PDF复制与打印限制</h2>
+            <p class="text-gray-500 mb-8">后端处理，兼容更多格式异常的PDF</p>
+
+            <label class="inline-block mb-6">
+                <span class="bg-indigo-600 text-white px-8 py-4 rounded-lg font-medium cursor-pointer hover:bg-indigo-700 transition-colors">
+                    <i class="fa-solid fa-upload mr-2"></i>选择PDF文件
+                </span>
+                <input type="file" id="pdfFile" accept=".pdf" class="hidden" />
+            </label>
+
+            <div id="loading" class="hidden flex flex-col items-center mb-6">
+                <div class="loader w-12 h-12 border-4 border-gray-200 rounded-full mb-4"></div>
+                <p class="text-gray-600">后端处理中（可能需要几秒）...</p>
+            </div>
+
+            <div id="result" class="hidden p-4 rounded-lg mb-6"></div>
+
+            <div class="text-sm text-gray-500 pt-4 border-t border-gray-100">
+                <p>若仍无法处理，推荐使用：</p>
+                <a href="https://smallpdf.com/unlock-pdf" target="_blank" class="text-indigo-600 underline hover:text-indigo-700 mt-1 inline-block">
+                    SmallPDF - 解锁PDF
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-white py-6 mt-8 text-center text-gray-500 text-sm">
+        <p>First Vibe Coding Project © 2026（前后端版）</p>
+    </footer>
+
+    <script>
+        const pdfFile = document.getElementById('pdfFile');
+        const loading = document.getElementById('loading');
+        const result = document.getElementById('result');
+
+        pdfFile.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            loading.classList.remove('hidden');
+            result.classList.add('hidden');
+
+            // 构建FormData上传到后端
+            const formData = new FormData();
+            formData.append('pdfFile', file);
+
+            try {
+                const response = await fetch('http://localhost:3000/unlock-pdf', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    // 下载后端返回的解锁文件
+                    const blob = await response.blob();
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = file.name.replace('.pdf', '_已解锁.pdf');
+                    a.click();
+
+                    result.textContent = '✅ PDF解锁成功，文件已自动下载';
+                    result.className = 'bg-green-50 text-green-600';
+                } else {
+                    const err = await response.json();
+                    result.textContent = `❌ ${err.message}`;
+                    result.className = 'bg-red-50 text-red-600';
+                }
+            } catch (err) {
+                result.textContent = '❌ 服务器连接失败，请检查后端是否运行';
+                result.className = 'bg-red-50 text-red-600';
+            } finally {
+                loading.classList.add('hidden');
+                result.classList.remove('hidden');
+                pdfFile.value = '';
+            }
+        });
+    </script>
+</body>
+</html>
